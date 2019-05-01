@@ -2,7 +2,7 @@
   (:require [org.httpkit.server :as s]
             [ataraxy.core :as core]
             [ataraxy.response :as response]
-            [clojure.test :refer [deftest testing is]]
+            [clojure.test :refer [deftest testing is are]]
             [ring.mock.request :as mock]))
 
 (defonce server (atom nil))
@@ -22,9 +22,10 @@
 
 (deftest test-app
   (testing "hello route"
-    (let [response (app (mock/request :get "/hello/yan"))]
-      (is (= (response :status) 200))
-      (is (= (response :body) "Hello yan")))))
+    (are [f res] (= (f (app (mock/request :get "/hello/yan")))
+                    res)
+                 :status 200
+                 :body "Hello yan")))
 
 (stop-server)
 (reset! server (s/run-server app {:port 8080}))
