@@ -1,12 +1,17 @@
 (ns link-shortener.core
-  (:require [org.httpkit.server :as s]))
+  (:require [org.httpkit.server :as s]
+            [ataraxy.core :as core]
+            [ataraxy.response :as response]))
 
 (defonce server (atom nil))
 
-(defn app [req]
-  {:status 200
-   :headers {"Content-Type" "text/html"}
-   :body "Hello Clojure"})
+(defn hello [{[_ name] :ataraxy/result}]
+  [::response/ok (str "Hello " name)])
+
+(def app
+  (core/handler
+    {:routes   '{[:get "/hello/" name] [:hello name]}
+     :handlers {:hello hello}}))
 
 (defn stop-server []
   (when-not (nil? @server)
