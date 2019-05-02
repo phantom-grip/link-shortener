@@ -6,7 +6,8 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [http-kit "2.3.0"]
                  [ataraxy "0.4.2"]
-                 [ring/ring-mock "0.4.0"]]
+                 [ring/ring-mock "0.4.0"]
+                 [ring/ring-json "0.4.0"]]
   :main ^:skip-aot link-shortener.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
