@@ -6,6 +6,7 @@
             [link-shortener.storage :as st]
             [ring.util.response :as res]
             [compojure.core :refer [routes GET POST PUT DELETE]]
+            [compojure.route :as route]
             [ring.middleware.params :refer [wrap-params]]
             [link-shortener.storage.in-memory :refer [in-memory-storage]]))
 
@@ -51,7 +52,8 @@
       (PUT "/links/:id" [id :as {{url "url"} :params}] (update-link stg id url))
       (DELETE "/links/:id" [id] (delete-link stg id))
       (GET "/links" [] (-> (list-links stg)
-                           wrap-json-response)))))
+                           wrap-json-response))
+      (route/not-found "Not Found"))))
 
 (defn stop-server []
   (when-not (nil? @server)
