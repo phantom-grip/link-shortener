@@ -9,7 +9,10 @@
                  [compojure "1.6.1"]
                  [ring/ring-mock "0.4.0"]
                  [ring/ring-json "0.4.0"]
-                 [commons-validator "1.6"]]
+                 [commons-validator "1.6"]
+                 [environ "1.1.0"]]
+  :min-lein-version "2.0.0"
+  :uberjar-name "link-shortener.jar"
   :main ^:skip-aot link-shortener.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

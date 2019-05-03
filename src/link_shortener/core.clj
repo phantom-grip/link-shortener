@@ -9,7 +9,9 @@
             [compojure.route :as route]
             [ring.middleware.params :refer [wrap-params]]
             [link-shortener.storage.in-memory :refer [in-memory-storage]]
-            [link-shortener.validations :refer [is-valid-url?]]))
+            [link-shortener.validations :refer [is-valid-url?]]
+            [environ.core :refer [env]])
+  (:gen-class))
 
 (defonce server (atom nil))
 
@@ -69,7 +71,12 @@
     (@server :timeout 100)
     (reset! server nil)))
 
-(stop-server)
-(reset! server (s/run-server (-> (create-app)
-                                 wrap-params)
-                             {:port 8080}))
+(defn start-server [port]
+  (s/run-server (-> (create-app)
+                    wrap-params)
+                {:port port}))
+
+(defn -main
+  [& [port]]
+  (let [port (Integer. (or port (env :port) 5000))]
+    (start-server port)))

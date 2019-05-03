@@ -1,0 +1,1 @@
+web: java $JVM_OPTS -cp target/uberjar/link-shortener.jar clojure.main -m link-shortener.core $PORT
