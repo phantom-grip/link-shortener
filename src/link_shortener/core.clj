@@ -5,7 +5,8 @@
             [ring.middleware.json :refer [wrap-json-response]]
             [link-shortener.storage :refer [Storage is-valid-storage]]
             [ring.util.response :as res]
-            [compojure.core :refer [defroutes GET POST]]))
+            [compojure.core :refer [defroutes GET POST]]
+            [ring.middleware.params :refer [wrap-params]]))
 
 (defn create-link*
   [!stg id url]
@@ -50,7 +51,7 @@
 
 (defn hello [name]
   {:status 200
-   :body (format "Hello %s" name)})
+   :body   (format "Hello %s" name)})
 
 (defn get-link
   [stg id]
@@ -85,7 +86,8 @@
       (res/response (list-links stg)))))
 
 (defroutes app
-  (GET "/hello/:name" [name] (hello name)))
+           (GET "/hello/:name" [name] (hello name))
+           (POST "/links" {{surname "surname"} :params} (do (println surname) {:body (str "Hi :)" surname)})))
 
 (defn stop-server []
   (when-not (nil? @server)
@@ -100,4 +102,6 @@
                  :body "Hello yan")))
 
 (stop-server)
-(reset! server (s/run-server app {:port 8080}))
+(reset! server (s/run-server (-> app
+                                 wrap-params)
+                             {:port 8080}))
