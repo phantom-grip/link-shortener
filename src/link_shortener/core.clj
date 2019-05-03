@@ -1,11 +1,11 @@
 (ns link-shortener.core
   (:require [org.httpkit.server :as s]
-            [ataraxy.core :as core]
-            [ataraxy.response :as response]
             [clojure.test :refer [deftest testing is are]]
             [ring.mock.request :as mock]
             [ring.middleware.json :refer [wrap-json-response]]
-            [link-shortener.storage :refer [Storage is-valid-storage]]))
+            [link-shortener.storage :refer [Storage is-valid-storage]]
+            [ring.util.response :as res]
+            [compojure.core :refer [defroutes GET POST]]))
 
 (defn create-link*
   [!stg id url]
@@ -48,42 +48,44 @@
 
 (defonce server (atom nil))
 
-(defn hello [{[_ name] :ataraxy/result}]
-  [::response/ok (str "Hello " name)])
+(defn hello [name]
+  {:status 200
+   :body (format "Hello %s" name)})
 
 (defn get-link
   [stg id]
   (if-let [url (get-link stg id)]
-    [::response/found url]
-    [::response/not-found "Sorry, that link doesn't exist"]))
+    (res/redirect url)
+    (res/not-found "Sorry, that link doesn't exist.")))
 
 (defn create-link
   [stg id {url :body}]
   (if (create-link stg id url)
-    [::response/ok (str "/links/" id)]
-    [::response/bad-request (format "The id %s is already in use." id)]))
+    (res/response (str "/links/" id))
+    (-> (format "The id %s is already in use." id)
+        res/response
+        (res/status 422))))
 
 (defn update-link
   [stg id {url :body}]
   (if (update-link stg id url)
-    [::response/ok (str "/links/" id)]
-    [::response/not-found "There is no link with the id %s." id]))
+    (res/response (str "/links/" id))
+    (res/not-found (format "There is no link with the id %s." id))))
 
 (defn delete-link
   [stg id]
   (delete-link stg id)
-  [::response/no-content])
+  (-> (res/response "")
+      (res/status 204)))
 
 (defn list-links
   [stg]
   (wrap-json-response
     (fn []
-      [::response/ok (list-links stg)])))
+      (res/response (list-links stg)))))
 
-(def app
-  (core/handler
-    {:routes   '{[:get "/hello/" name] [:hello name]}
-     :handlers {:hello hello}}))
+(defroutes app
+  (GET "/hello/:name" [name] (hello name)))
 
 (defn stop-server []
   (when-not (nil? @server)

@@ -5,7 +5,7 @@
             :url  "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [http-kit "2.3.0"]
-                 [ataraxy "0.4.2"]
+                 [compojure "1.6.1"]
                  [ring/ring-mock "0.4.0"]
                  [ring/ring-json "0.4.0"]]
   :main ^:skip-aot link-shortener.core
