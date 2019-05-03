@@ -8,7 +8,8 @@
             [compojure.core :refer [routes GET POST PUT DELETE]]
             [compojure.route :as route]
             [ring.middleware.params :refer [wrap-params]]
-            [link-shortener.storage.in-memory :refer [in-memory-storage]]))
+            [link-shortener.storage.in-memory :refer [in-memory-storage]]
+            [link-shortener.validations :refer [is-valid-url?]]))
 
 (defonce server (atom nil))
 
@@ -20,17 +21,25 @@
 
 (defn create-link
   [stg id url]
-  (if (st/create-link stg id url)
-    (res/response (str "/links/" id))
-    (-> (format "The id %s is already in use." id)
-        res/response
-        (res/status 422))))
+  (cond
+    (not (is-valid-url? url))
+    (res/bad-request "Url is not valid")
+    :else
+    (if (st/create-link stg id url)
+      (res/response (str "/links/" id))
+      (-> (format "The id %s is already in use." id)
+          res/response
+          (res/status 422)))))
 
 (defn update-link
   [stg id url]
-  (if (st/update-link stg id url)
-    (res/response (str "/links/" id))
-    (res/not-found (format "There is no link with the id %s." id))))
+  (cond
+    (not (is-valid-url? url))
+    (res/bad-request "Url is not valid")
+    :else
+    (if (st/update-link stg id url)
+      (res/response (str "/links/" id))
+      (res/not-found (format "There is no link with the id %s." id)))))
 
 (defn delete-link
   [stg id]
