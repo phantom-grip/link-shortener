@@ -27,7 +27,7 @@
   [stg id url]
   (cond
     (not (is-valid-url? url))
-    (res/bad-request "Url is not valid")
+    (res/bad-request (format "Url %s is not valid" url))
     :else
     (if (st/create-link stg id url)
       (res/response (str "/links/" id))
@@ -68,19 +68,14 @@
                                     wrap-json-response))
                (route/not-found "Not Found")))))
 
-(s/def ::a spec/int?)
-(s/def ::b spec/int?)
-(s/def ::c spec/int?)
-(s/def ::d spec/int?)
-(s/def ::total spec/int?)
-(s/def ::total-body (s/keys ::req-un [::total]))
 
-(s/def ::x spec/int?)
-(s/def ::y spec/int?)
-
-(s/def ::url spec/int?)
-(s/def ::id spec/int?)
+(s/def ::url spec/string?)
+(s/def ::id spec/string?)
+(s/def ::success-link spec/string?)
+(s/def ::error-explanation spec/string?)
 (s/def ::links spec/int?)
+
+(def stg (in-memory-storage))
 
 (def app
   (api
@@ -91,24 +86,14 @@
                 :data {:info {:title       "Link shortener"
                               :description "Compojure Api example"}
                        :tags [{:name "api", :description "some apis"}]}}}
-
-    (context "/math/:a" []
-      :path-params [a :- ::a]
-
-      (sweet/POST "/plus" []
-        :query-params [b :- ::b, {c :- ::c 0}]
-        :body [numbers (s/keys :req-un [::d])]
-        :return (s/keys :req-un [::total])
-        (ok {:total (+ a b c (:d numbers))})))
-
-    (context "/data-math" []
+    (context "/links" []
       (resource
-        ;; to make coercion explicit
         {:coercion :spec
-         :get      {:parameters {:query-params (s/keys :req-un [::x ::y])}
-                    :responses  {200 {:schema ::total-body}}
-                    :handler    (fn [{{:keys [x y]} :query-params}]
-                                  (ok {:total (+ x y)}))}}))))
+         :post     {:parameters {:body (s/keys :req-un [::id ::url])}
+                    :responses  {200 {:schema ::success-link}
+                                 404 {:schema ::error-explanation}}
+                    :handler    (fn [{{:keys [id url]} :params}]
+                                  (create-link stg id url))}}))))
 
 (comment (def old-app
            (api
@@ -138,13 +123,13 @@
                              :handler    (fn [{{:keys [x y]} :query-params}]
                                            (ok {:total (+ x y)}))}})))))
 
-(println (-> {:request-method :get
-              :uri            "/data-math"
-              :query-params   {:x "1", :y "2"}}
-             (app)
-             :body
-             (slurp)
-             (cheshire/parse-string true)))
+(comment (println (-> {:request-method :get
+                       :uri            "/data-math"
+                       :query-params   {:x "1", :y "2"}}
+                      (app)
+                      :body
+                      (slurp)
+                      (cheshire/parse-string true))))
 
 
 
