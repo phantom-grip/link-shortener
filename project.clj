@@ -10,9 +10,17 @@
                  [ring/ring-mock "0.4.0"]
                  [ring/ring-json "0.4.0"]
                  [commons-validator "1.6"]
-                 [environ "1.1.0"]]
+                 [environ "1.1.0"]
+                 [metosin/spec-tools "0.4.0"]
+                 [metosin/compojure-api "2.0.0-alpha30"]
+                 [org.clojure/spec.alpha "0.2.176"]
+                 [cheshire "5.8.1"]
+                 [metosin/spec-tools "0.9.2-alpha1"]]
+  :ring {:handler link-shortener.core/app}
   :min-lein-version "2.0.0"
   :uberjar-name "link-shortener.jar"
   :main ^:skip-aot link-shortener.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}
+             :dev     {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]]
+                       :plugins      [[lein-ring "0.12.0"]]}})
