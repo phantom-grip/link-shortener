@@ -49,6 +49,11 @@
                               :description "Compojure Api example"}
                        :tags [{:name "api", :description "some apis"}]}}}
     (context "/links" []
+      (context "/:id" [id]
+        (resource {:coercion :spec
+                   :get      {:handler   (fn [_]
+                                           (println "OK")
+                                           (ok id))}}))
       (resource
         {:coercion :spec
          :post     {:parameters {:form-params (s/keys :req-un [::id ::url])}
@@ -58,10 +63,10 @@
                                   (let [{{:keys [id url]} :params} params
                                         _ (clojure.pprint/pprint params)]
                                     (handlers/create-link stg id url)))}
-         :get      {:responses {200 {:schema ::success-link}
-                                404 {:schema ::error-explanation}}
-                    :handler   (fn [_]
+         :get      {:handler   (fn [_]
                                 (handlers/list-links stg))}}))))
+
+(def app* (wrap-json-response app))
 
 (comment (def old-app
            (api
@@ -99,8 +104,13 @@
 
 (let [req1 (-> (mock/request :post "/links")
                (mock/body {:id "google" :url "http://www.google.com"})
-               (mock/content-type "application/x-www-form-urlencoded"))]
-  (print (get-resp req1)))
+               (mock/content-type "application/x-www-form-urlencoded"))
+      req2 (-> (mock/request :get "/links"))
+      req3 (-> (mock/request :get "/links/123"))]
+  (do
+    (println (get-resp req1))
+    (println (get-resp req2))
+    (println (get-resp req3))))
 
 (defonce server (atom nil))
 
