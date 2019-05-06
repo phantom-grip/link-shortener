@@ -89,11 +89,13 @@
     (context "/links" []
       (resource
         {:coercion :spec
-         :post     {:parameters {:body (s/keys :req-un [::id ::url])}
+         :post     {:parameters {:body-params (s/keys :req-un [::id ::url])}
                     :responses  {200 {:schema ::success-link}
                                  404 {:schema ::error-explanation}}
-                    :handler    (fn [{{:keys [id url]} :params}]
-                                  (create-link stg id url))}}))))
+                    :handler    (fn [params]
+                                  (let [{{:keys [id url]} :params} params
+                                        _ (clojure.pprint/pprint params)]
+                                    (create-link stg id url)))}}))))
 
 (comment (def old-app
            (api
@@ -122,6 +124,40 @@
                              :responses  {200 {:schema ::total-body}}
                              :handler    (fn [{{:keys [x y]} :query-params}]
                                            (ok {:total (+ x y)}))}})))))
+
+(print "HERE" (-> (mock/request :post "/links" {:id "google" :url "http://www.google.com"})
+                  app
+                  :body
+                  slurp
+                  (cheshire/parse-string true)))
+
+
+(comment (deftest app
+           (is (= "/links/google" (-> {:request-method :post
+                                       :uri            "/links"
+                                       :form-params    {:id  "google"
+                                                        :url "http://www.google.com"}}
+                                      (app)
+                                      :body)))))
+
+(defonce server (atom nil))
+
+(defn stop-server []
+  (when-not (nil? @server)
+    (@server :timeout 100)
+    (reset! server nil)))
+
+(defn start-server [port]
+  (server/run-server app
+                     {:port port}))
+
+(stop-server)
+(reset! server (start-server 8080))
+
+(defn -main
+  [& [port]]
+  (let [port (Integer. (or port (env :port) 5000))]
+    (start-server port)))
 
 (comment (println (-> {:request-method :get
                        :uri            "/data-math"
