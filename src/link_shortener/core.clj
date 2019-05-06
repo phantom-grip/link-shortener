@@ -3,59 +3,21 @@
             [clojure.test :refer [deftest testing is are]]
             [ring.mock.request :as mock]
             [ring.middleware.json :refer [wrap-json-response]]
-            [link-shortener.storage :as st]
             [ring.util.response :as res]
             [compojure.route :as route]
             [ring.middleware.params :refer [wrap-params]]
-            [link-shortener.storage.in-memory :refer [in-memory-storage]]
-            [link-shortener.validations :refer [is-valid-url?]]
             [environ.core :refer [env]]
             [clojure.spec.alpha :as s]
             [spec-tools.spec :as spec]
             [compojure.api.sweet :refer [api context resource] :as sweet]
             [ring.util.http-response :refer [ok]]
-            [cheshire.core :as cheshire])
+            [cheshire.core :as cheshire]
+    ;
+            [link-shortener.storage :as st]
+            [link-shortener.storage.in-memory :refer [in-memory-storage]]
+            [link-shortener.validations :refer [is-valid-url? shorter-than]]
+            [link-shortener.handlers :as handlers])
   (:gen-class))
-
-(defn get-link
-  [stg id]
-  (if-let [url (st/get-link stg id)]
-    (res/redirect url)
-    (res/not-found "Sorry, that link doesn't exist.")))
-
-(defn create-link
-  [stg id url]
-  (cond
-    (not (is-valid-url? url))
-    (res/bad-request (format "Url %s is not valid" url))
-    :else
-    (if (st/create-link stg id url)
-      (res/response (str "/links/" id))
-      (-> (format "The id %s is already in use." id)
-          res/response
-          (res/status 422)))))
-
-(defn update-link
-  [stg id url]
-  (cond
-    (not (is-valid-url? url))
-    (res/bad-request "Url is not valid")
-    :else
-    (if (st/update-link stg id url)
-      (res/response (str "/links/" id))
-      (res/not-found (format "There is no link with the id %s." id)))))
-
-(defn delete-link
-  [stg id]
-  (st/delete-link stg id)
-  (-> (res/response "")
-      (res/status 204)))
-
-(defn list-links
-  [stg]
-  (fn [_]
-    (-> (st/list-links stg)
-        res/response)))
 
 (comment (defn create-app []
            (let [stg (in-memory-storage)]
@@ -69,7 +31,7 @@
                (route/not-found "Not Found")))))
 
 
-(s/def ::url spec/string?)
+(s/def ::url (s/and spec/string? is-valid-url?))
 (s/def ::id spec/string?)
 (s/def ::success-link spec/string?)
 (s/def ::error-explanation spec/string?)
@@ -86,16 +48,16 @@
                 :data {:info {:title       "Link shortener"
                               :description "Compojure Api example"}
                        :tags [{:name "api", :description "some apis"}]}}}
-    (context "/links" []
+    (context "/links/123" []
       (resource
         {:coercion :spec
-         :post     {:parameters {:body-params (s/keys :req-un [::id ::url])}
+         :post     {:parameters {:form-params (s/keys :req-un [::id ::url])}
                     :responses  {200 {:schema ::success-link}
                                  404 {:schema ::error-explanation}}
                     :handler    (fn [params]
                                   (let [{{:keys [id url]} :params} params
                                         _ (clojure.pprint/pprint params)]
-                                    (create-link stg id url)))}}))))
+                                    (handlers/create-link stg id url)))}}))))
 
 (comment (def old-app
            (api
@@ -125,20 +87,16 @@
                              :handler    (fn [{{:keys [x y]} :query-params}]
                                            (ok {:total (+ x y)}))}})))))
 
-(print "HERE" (-> (mock/request :post "/links" {:id "google" :url "http://www.google.com"})
-                  app
-                  :body
-                  slurp
-                  (cheshire/parse-string true)))
-
-
-(comment (deftest app
-           (is (= "/links/google" (-> {:request-method :post
-                                       :uri            "/links"
-                                       :form-params    {:id  "google"
-                                                        :url "http://www.google.com"}}
-                                      (app)
-                                      :body)))))
+(let [;;request with :form-params inside
+      req1 (-> (mock/request :post "/links")
+               (mock/body {:id "google" :url "http://www.google.com"})
+               (mock/content-type "application/x-www-form-urlencoded"))
+      get-resp (fn [req]
+                 (-> (app req)
+                     :body
+                     slurp
+                     (cheshire/parse-string true)))]
+  (print (get-resp req1)))
 
 (defonce server (atom nil))
 

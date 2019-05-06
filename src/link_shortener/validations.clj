@@ -6,3 +6,8 @@
     (try
       (.isValid validator url)
       (catch Exception e false))))
+
+(defn shorter-than [str length]
+  (try
+    (< (count str) length)
+    (catch Exception e false)))
