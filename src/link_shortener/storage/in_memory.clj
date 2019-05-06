@@ -29,7 +29,7 @@
 (defn in-memory-storage
   []
   (let [!stg (atom {})]
-    (add-watch !stg :watcher (fn [_ _ _ new-state] (println new-state)))
+    (comment (add-watch !stg :watcher (fn [_ _ _ new-state] (println new-state))))
     (reify Storage
       (create-link [_ id url] (create-link* !stg id url))
       (get-link [_ id] (get-link* !stg id))

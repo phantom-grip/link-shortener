@@ -48,7 +48,7 @@
                 :data {:info {:title       "Link shortener"
                               :description "Compojure Api example"}
                        :tags [{:name "api", :description "some apis"}]}}}
-    (context "/links/123" []
+    (context "/links" []
       (resource
         {:coercion :spec
          :post     {:parameters {:form-params (s/keys :req-un [::id ::url])}
@@ -57,7 +57,11 @@
                     :handler    (fn [params]
                                   (let [{{:keys [id url]} :params} params
                                         _ (clojure.pprint/pprint params)]
-                                    (handlers/create-link stg id url)))}}))))
+                                    (handlers/create-link stg id url)))}
+         :get      {:responses {200 {:schema ::success-link}
+                                404 {:schema ::error-explanation}}
+                    :handler   (fn [_]
+                                (handlers/list-links stg))}}))))
 
 (comment (def old-app
            (api
@@ -87,15 +91,15 @@
                              :handler    (fn [{{:keys [x y]} :query-params}]
                                            (ok {:total (+ x y)}))}})))))
 
-(let [;;request with :form-params inside
-      req1 (-> (mock/request :post "/links")
+(defn get-resp [req]
+  (-> (app req)
+      :body
+      slurp
+      (cheshire/parse-string true)))
+
+(let [req1 (-> (mock/request :post "/links")
                (mock/body {:id "google" :url "http://www.google.com"})
-               (mock/content-type "application/x-www-form-urlencoded"))
-      get-resp (fn [req]
-                 (-> (app req)
-                     :body
-                     slurp
-                     (cheshire/parse-string true)))]
+               (mock/content-type "application/x-www-form-urlencoded"))]
   (print (get-resp req1)))
 
 (defonce server (atom nil))
@@ -116,14 +120,6 @@
   [& [port]]
   (let [port (Integer. (or port (env :port) 5000))]
     (start-server port)))
-
-(comment (println (-> {:request-method :get
-                       :uri            "/data-math"
-                       :query-params   {:x "1", :y "2"}}
-                      (app)
-                      :body
-                      (slurp)
-                      (cheshire/parse-string true))))
 
 
 
