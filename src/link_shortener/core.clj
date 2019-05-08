@@ -9,7 +9,8 @@
             [environ.core :refer [env]]
             [clojure.spec.alpha :as s]
             [spec-tools.spec :as spec]
-            [compojure.api.sweet :refer [api context resource] :as sweet]
+            [compojure.api.sweet :refer [api context resource undocumented]]
+            [compojure.api.exception]
             [ring.util.http-response :refer [ok]]
             [cheshire.core :as cheshire]
     ;
@@ -19,17 +20,20 @@
             [link-shortener.handlers :as handlers])
   (:gen-class))
 
-(s/def ::url (s/and spec/string? is-valid-url?))
-(s/def ::id spec/string?)
-(s/def ::success-link spec/string?)
-(s/def ::error-explanation spec/string?)
-(s/def ::links spec/int?)
-(s/def ::number spec/int?)
+(s/def ::string spec/string?)
+(s/def ::shorter-than-50 #(<= (count %) 50))
+(s/def ::valid-url is-valid-url?)
+
+
+(s/def ::url (s/and ::string ::shorter-than-50 ::valid-url))
+(s/def ::id (s/and ::string ::shorter-than-50))
+(s/def ::map-of-links spec/map?)
 
 (def stg (in-memory-storage))
 
-;; TODO not found
-;; TODO more security with specs
+;; TODO error handling
+;; TODO tests
+;; TODO redis
 
 (def app
   (api
@@ -44,28 +48,24 @@
       (context "/:id" [id]
         :path-params [id :- ::id]
         (resource {:coercion :spec
-                   :get      {:handler (fn [param]
-                                         (clojure.pprint/pprint param)
-                                         (ok {:id id
-                                              :text "get links/:id"}))}
-                   :put {:parameters {:params (s/keys :req-un [::id ::url])}
-                         :handler (fn [{{:keys [id url]} :params}]
-                                    (ok {:id id
-                                         :text "put links/:id"}))}
-                   :delete {:parameters {:params (s/keys :req-un [::id])}
-                            :handler (fn [_]
-                                       (ok {:id id
-                                            :text "get links/:id"}))}}))
+                   :get      {:handler (fn [_]
+                                         (handlers/get-link stg id))}
+                   :put      {:parameters {:params (s/keys :req-un [::url])}
+                              :handler    (fn [{{:keys [url]} :params}]
+                                            (handlers/update-link stg id url))}
+                   :delete   {:handler (fn [_]
+                                         (handlers/delete-link stg id))}}))
       (resource
         {:coercion :spec
          :post     {:parameters {:form-params (s/keys :req-un [::id ::url])}
-                    :responses  {200 {:schema ::success-link}
-                                 404 {:schema ::error-explanation}}
                     :handler    (fn [params]
                                   (let [{{:keys [id url]} :params} params]
                                     (handlers/create-link stg id url)))}
-         :get      {:handler (fn [_]
-                               (handlers/list-links stg))}}))))
+         :get      {:responses {200 {:schema ::map-of-links}}
+                    :handler   (fn [_]
+                                 (handlers/list-links stg))}}))
+    (undocumented
+      (route/not-found (res/not-found "Not Found")))))
 
 (defn get-resp [req]
   (-> (app req)
@@ -73,19 +73,15 @@
       slurp
       (cheshire/parse-string true)))
 
-(defn get-resp1 [req]
-  (-> (app req)
-      :body))
-
-(let [req1 (-> (mock/request :post "/links")
-               (mock/body {:id "google" :url "http://www.google.com"})
-               (mock/content-type "application/x-www-form-urlencoded"))
-      req2 (-> (mock/request :get "/links"))
-      req3 (-> (mock/request :get "/links/google"))]
-  (do
-    (println (get-resp req1))
-    ;(println (get-resp req2))
-    (println (get-resp req3))))
+(comment (let [req1 (-> (mock/request :post "/links")
+                        (mock/body {:id "google" :url "http://www.google.com"})
+                        (mock/content-type "application/x-www-form-urlencoded"))
+               req2 (-> (mock/request :get "/links"))
+               req3 (-> (mock/request :get "/links/google"))]
+           (do
+             (println (get-resp req1))
+             ;(println (get-resp req2))
+             (println (get-resp req3)))))
 
 (defonce server (atom nil))
 
