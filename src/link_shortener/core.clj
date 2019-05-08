@@ -42,9 +42,9 @@
                        :tags [{:name "api", :description "some apis"}]}}}
     (context "/links" []
       (context "/:id" [id]
+        :path-params [id :- ::id]
         (resource {:coercion :spec
-                   :get      {:parameters {:params (s/keys :req-un [::number])}
-                              :handler (fn [param]
+                   :get      {:handler (fn [param]
                                          (clojure.pprint/pprint param)
                                          (ok {:id id
                                               :text "get links/:id"}))}
