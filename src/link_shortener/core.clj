@@ -24,6 +24,7 @@
 (s/def ::success-link spec/string?)
 (s/def ::error-explanation spec/string?)
 (s/def ::links spec/int?)
+(s/def ::number spec/int?)
 
 (def stg (in-memory-storage))
 
@@ -42,15 +43,19 @@
     (context "/links" []
       (context "/:id" [id]
         (resource {:coercion :spec
-                   :get      {:parameters {:params (s/keys :req-un [::id])}
-                              :handler (fn [_]
-                                         (handlers/get-link stg id))}
+                   :get      {:parameters {:params (s/keys :req-un [::number])}
+                              :handler (fn [param]
+                                         (clojure.pprint/pprint param)
+                                         (ok {:id id
+                                              :text "get links/:id"}))}
                    :put {:parameters {:params (s/keys :req-un [::id ::url])}
                          :handler (fn [{{:keys [id url]} :params}]
-                                    (handlers/update-link stg id url))}
+                                    (ok {:id id
+                                         :text "put links/:id"}))}
                    :delete {:parameters {:params (s/keys :req-un [::id])}
                             :handler (fn [_]
-                                       (handlers/delete-link stg id))}}))
+                                       (ok {:id id
+                                            :text "get links/:id"}))}}))
       (resource
         {:coercion :spec
          :post     {:parameters {:form-params (s/keys :req-un [::id ::url])}
@@ -80,7 +85,7 @@
   (do
     (println (get-resp req1))
     ;(println (get-resp req2))
-    (println (get-resp1 req3))))
+    (println (get-resp req3))))
 
 (defonce server (atom nil))
 
