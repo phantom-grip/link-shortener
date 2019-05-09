@@ -13,9 +13,8 @@
             [compojure.api.exception]
             [ring.util.http-response :refer [ok]]
             [cheshire.core :as cheshire]
-    ;
             [link-shortener.storage :as st]
-            [link-shortener.storage.in-memory :refer [in-memory-storage]]
+            [link-shortener.storage.redis :refer [redis-storage]]
             [link-shortener.validations :refer [is-valid-url? shorter-than]]
             [link-shortener.handlers :as handlers])
   (:gen-class))
@@ -29,11 +28,7 @@
 (s/def ::id (s/and ::string ::shorter-than-50))
 (s/def ::map-of-links spec/map?)
 
-(def stg (in-memory-storage))
-
-;; TODO error handling
-;; TODO tests
-;; TODO redis
+(def stg (redis-storage))
 
 (def app
   (api

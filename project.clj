@@ -13,6 +13,7 @@
                  [environ "1.1.0"]
                  [metosin/spec-tools "0.4.0"]
                  [metosin/compojure-api "2.0.0-alpha30"]
+                 [com.taoensso/carmine "2.19.1"]
                  [org.clojure/spec.alpha "0.2.176"]
                  [cheshire "5.8.1"]
                  [metosin/spec-tools "0.9.2-alpha1"]]
