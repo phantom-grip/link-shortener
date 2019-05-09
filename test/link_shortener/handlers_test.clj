@@ -61,6 +61,6 @@
           (testing "the response status is 200"
             (is (= (:status response) 200)))
           (testing "With the expected body"
-            (is (= (:body response) "links/test")))
+            (is (= (:body response) "/links/test")))
           (testing "and the link actually exists"
             (is (= new-url (st/get-link stg id)))))))))
