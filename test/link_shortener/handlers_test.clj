@@ -43,3 +43,24 @@
       (let [response (handlers/create-link stg id url)]
         (testing "the response status is 422"
           (is (= (:status response) 422)))))))
+
+
+(deftest update-link-test
+  (let [url "http://www.example.com"
+        stg (in-memory-storage)
+        id "test"]
+    (testing "When the ID doesn't exist"
+      (let [response (handlers/update-link stg id url)]
+        (testing "the response status is 404"
+          (is (= (:status response) 404)))))
+
+    (testing "When the ID does exists"
+      (let [new-url "http://www.new-example.com"]
+        (st/create-link stg id url)
+        (let [response (handlers/update-link stg id new-url)]
+          (testing "the response status is 200"
+            (is (= (:status response) 200)))
+          (testing "With the expected body"
+            (is (= (:body response) "links/test")))
+          (testing "and the link actually exists"
+            (is (= new-url (st/get-link stg id)))))))))
