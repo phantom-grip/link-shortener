@@ -26,3 +26,20 @@
     ))
 
 
+(deftest create-link-test
+  (let [url "http://www.example.com"
+        stg (in-memory-storage)
+        id "test"]
+    (testing "When the ID doesn't exist"
+      (let [response (handlers/create-link stg id url)]
+        (testing "the response status is 200"
+          (is (= (:status response) 200)))
+        (testing "with the expected body"
+          (is (= (:body response) "/links/test")))
+        (testing "and the link is actual exists"
+          (is (= url (st/get-link stg id))))))
+
+    (testing "When the ID does exists"
+      (let [response (handlers/create-link stg id url)]
+        (testing "the response status is 422"
+          (is (= (:status response) 422)))))))
