@@ -1,8 +1,12 @@
 (ns link-shortener.storage.redis
   [:require [link-shortener.storage :refer [Storage]]
-            [taoensso.carmine :as car :refer (wcar)]])
+            [taoensso.carmine :as car :refer (wcar)]
+            [environ.core :refer [env]]])
 
-(defonce server1-conn {:pool {} :spec {:uri "redis://h:pa5e05adb66117c0dbf17f0a7b43ee903a64e0abe83926c903d81315fdd64ef94@ec2-34-252-60-59.eu-west-1.compute.amazonaws.com:26419"}})
+(if-not (env :redis-url)
+  (throw (Exception. "Specify redis url")))
+
+(defonce server1-conn {:pool {} :spec {:uri (env :redis-url)}})
 (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
 
 (def HASH_NAME "links")
