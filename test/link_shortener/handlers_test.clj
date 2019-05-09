@@ -64,3 +64,23 @@
             (is (= (:body response) "/links/test")))
           (testing "and the link actually exists"
             (is (= new-url (st/get-link stg id)))))))))
+
+
+
+(deftest delete-link-test
+  (let [url "http://www.example.com"
+        stg (in-memory-storage)
+        id "test"]
+    (testing "When the link exists"
+      (st/create-link stg id url)
+      (let [response (handlers/delete-link stg id)]
+        (testing "the response status is 204"
+          (is (= (:status response) 204)))
+        (testing "and the link is actually deleted"
+          (is (nil? (st/get-link stg id))))))
+
+    (testing "When the ID does exists"
+      (let [new-id "new-test"
+            response (handlers/delete-link stg new-id)]
+        (testing "the response status is still 204"
+          (is (= (:status response) 204)))))))
