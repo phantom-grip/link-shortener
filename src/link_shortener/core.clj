@@ -1,7 +1,6 @@
 (ns link-shortener.core
   (:require [org.httpkit.server :as server]
             [clojure.test :refer [deftest testing is are]]
-            [ring.mock.request :as mock]
             [ring.middleware.json :refer [wrap-json-response]]
             [ring.util.response :as res]
             [compojure.route :as route]
@@ -12,8 +11,6 @@
             [compojure.api.sweet :refer [api context resource undocumented]]
             [compojure.api.exception]
             [ring.util.http-response :refer [ok]]
-            [cheshire.core :as cheshire]
-            [link-shortener.storage :as st]
             [link-shortener.storage.redis :refer [redis-storage]]
             [link-shortener.validations :refer [is-valid-url? shorter-than]]
             [link-shortener.handlers :as handlers])
@@ -22,8 +19,6 @@
 (s/def ::string spec/string?)
 (s/def ::shorter-than-50 #(<= (count %) 50))
 (s/def ::valid-url is-valid-url?)
-
-
 (s/def ::url (s/and ::string ::shorter-than-50 ::valid-url))
 (s/def ::id (s/and ::string ::shorter-than-50))
 (s/def ::map-of-links spec/map?)
@@ -62,22 +57,6 @@
     (undocumented
       (route/not-found (res/not-found "Not Found")))))
 
-(defn get-resp [req]
-  (-> (app req)
-      :body
-      slurp
-      (cheshire/parse-string true)))
-
-(comment (let [req1 (-> (mock/request :post "/links")
-                        (mock/body {:id "google" :url "http://www.google.com"})
-                        (mock/content-type "application/x-www-form-urlencoded"))
-               req2 (-> (mock/request :get "/links"))
-               req3 (-> (mock/request :get "/links/google"))]
-           (do
-             (println (get-resp req1))
-             ;(println (get-resp req2))
-             (println (get-resp req3)))))
-
 (defonce server (atom nil))
 
 (defn stop-server []
@@ -89,8 +68,8 @@
   (server/run-server app
                      {:port port}))
 
-(stop-server)
-(reset! server (start-server 8080))
+(comment (stop-server)
+         (reset! server (start-server 8080)))
 
 (defn -main
   [& [port]]
