@@ -84,3 +84,18 @@
             response (handlers/delete-link stg new-id)]
         (testing "the response status is still 204"
           (is (= (:status response) 204)))))))
+
+
+(deftest list-links-test
+  (let [stg (in-memory-storage)
+        links {"a" "http://www.example.com/a"
+               "b" "http://www.example.com/b"
+               "c" "http://www.example.com/c"}]
+    (doseq [[id url] links]
+      (st/create-link stg id url))
+    (let [links-handler (handlers/list-links stg)
+          response (links-handler nil)]
+      (testing "The response status is 200"
+        (is (= (:status response) 200)))
+      (testing "and links equal original map"
+        (is (= (:body response) links))))))
